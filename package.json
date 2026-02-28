@@ -1,0 +1,20 @@
+{
+  "name": "cybershield-lite",
+  "version": "1.0.0",
+  "description": "CyberShield Lite — root workspace runner",
+  "scripts": {
+    "setup": "npm run setup:backend && npm run setup:frontend",
+    "setup:backend": "cd backend && npm install",
+    "setup:frontend": "cd frontend && npm install",
+    "dev": "concurrently --kill-others-on-fail --prefix-colors \"cyan,green,yellow\" --names \"backend,frontend,scanner\" \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:scanner\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm start",
+    "dev:scanner": "cd scanner && python app.py",
+    "start": "concurrently --kill-others-on-fail --names \"backend,frontend\" \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
