@@ -28,9 +28,8 @@ const webhookRoutes   = require('./src/routes/webhook.routes');
 const domainRoutes    = require('./src/routes/domain.routes');
 const userRoutes      = require('./src/routes/user.routes');
 
-// 🔥 Auto downgrade job
+// 🔥 Jobs
 const autoDowngradeExpiredUsers = require('./src/jobs/subscription.job');
-const migrateSubscriptions = require('./src/jobs/migrateSubscriptions.job');
 const runAutoScan = require('./src/jobs/autoScan.job');
 
 // ─── Ensure logs dir ───────────────────────────────────────────────────────────
@@ -43,6 +42,7 @@ const app = express();
 connectDB();
 
 app.use(helmet());
+
 app.use(cors({
   origin: config.services.clientUrl,
   credentials: true,
@@ -57,15 +57,19 @@ app.use(rateLimit({
 }));
 
 // ───────────────────────────────────────────────────────────────────────────────
-// 🔥 WEBHOOK RAW BODY (MUST BE BEFORE express.json())
+// 🔥 Razorpay WEBHOOK RAW BODY
 // ───────────────────────────────────────────────────────────────────────────────
 app.use('/api/webhook', express.raw({
   type: 'application/json',
   limit: '1mb',
 }));
+
+// Mount webhook routes
 app.use('/api/webhook', webhookRoutes);
 
-// ─── Normal JSON parsing ───────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────
+// Normal body parser (after webhook)
+// ───────────────────────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
@@ -75,9 +79,11 @@ app.use(morgan(config.server.isProd ? 'combined' : 'dev', {
 
 // ─── Health endpoint ───────────────────────────────────────────────────────────
 app.get('/health', async (req, res) => {
+
   const startTime = Date.now();
 
   const dbState  = mongoose.connection.readyState;
+
   const dbStatus = dbState === 1
     ? 'connected'
     : dbState === 2
@@ -85,6 +91,7 @@ app.get('/health', async (req, res) => {
     : 'disconnected';
 
   let scannerStatus = 'unknown';
+
   try {
     await axios.get(`${config.services.scannerUrl}/health`, { timeout: 3000 });
     scannerStatus = 'reachable';
@@ -105,6 +112,7 @@ app.get('/health', async (req, res) => {
       scanner: { status: scannerStatus, url: config.services.scannerUrl },
     },
   });
+
 });
 
 // ─── Routes ────────────────────────────────────────────────────────────────────
@@ -113,22 +121,20 @@ app.use('/api/scan', scanRoutes);
 app.use('/api/phishing', phishingRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/report', reportRoutes);
-
-// Webhook route (raw body configured above)
-app.use('/webhook', webhookRoutes);
-
 app.use('/api/domains', domainRoutes);
 app.use('/api/user', userRoutes);
 
-// ─── 404 + Error Handler ───────────────────────────────────────────────────────
+// ─── 404 handler ───────────────────────────────────────────────────────────────
 app.use((req, res) =>
   res.status(404).json({ success: false, message: 'Route not found' })
 );
 
+// ─── Error Handler ─────────────────────────────────────────────────────────────
 app.use(errorHandler);
 
 // ─── Start server ──────────────────────────────────────────────────────────────
 const server = app.listen(config.server.port, () => {
+
   logger.info('CyberShield API started', {
     port: config.server.port,
     env: config.server.env,
@@ -136,29 +142,34 @@ const server = app.listen(config.server.port, () => {
     cors: config.services.clientUrl,
   });
 
-  // 🔥 Run downgrade check once at startup
+  // Run jobs
   autoDowngradeExpiredUsers();
   runAutoScan();
 
-  // 🔥 Run downgrade check every 1 hour
   setInterval(() => {
     autoDowngradeExpiredUsers();
   }, 60 * 60 * 1000);
+
 });
 
 // ─── Graceful shutdown ─────────────────────────────────────────────────────────
 process.on('SIGTERM', () => {
+
   logger.info('SIGTERM — graceful shutdown...');
+
   server.close(() => {
     logger.info('Server closed.');
     process.exit(0);
   });
+
 });
 
 process.on('unhandledRejection', (reason) => {
+
   logger.error('Unhandled promise rejection', {
     reason: String(reason),
   });
+
 });
 
 module.exports = app;
