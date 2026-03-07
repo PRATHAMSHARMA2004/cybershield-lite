@@ -28,31 +28,35 @@ const generateReport = async (req, res, next) => {
       createdAt: scan.createdAt,
     };
 
-    const html = generateHTMLReport(scan);
+    const html = generateHTMLReport(formattedScan);
 
     const browser = await puppeteer.launch({
-      headless: true,
+      headless: "new",
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      executablePath: puppeteer.executablePath()
     });
 
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'load' });
+
+    await page.setContent(html, {
+      waitUntil: 'networkidle0'
+    });
 
     const pdfBuffer = await page.pdf({
-  format: 'A4',
-  printBackground: true,
-  preferCSSPageSize: true
-});
+      format: 'A4',
+      printBackground: true,
+      preferCSSPageSize: true
+    });
 
     await browser.close();
 
-   res.writeHead(200, {
-  'Content-Type': 'application/pdf',
-  'Content-Length': pdfBuffer.length,
-  'Content-Disposition': `attachment; filename=cybershield-report-${scan._id}.pdf`,
-});
+    res.writeHead(200, {
+      'Content-Type': 'application/pdf',
+      'Content-Length': pdfBuffer.length,
+      'Content-Disposition': `attachment; filename=cybershield-report-${scan._id}.pdf`,
+    });
 
-res.end(pdfBuffer);
+    res.end(pdfBuffer);
 
   } catch (error) {
     next(error);
