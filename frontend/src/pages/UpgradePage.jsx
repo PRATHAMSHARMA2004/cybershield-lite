@@ -6,6 +6,7 @@ import Card from "../components/ui/Card";
 import { Spinner } from "../components/ui/primitives";
 
 export default function UpgradePage() {
+
   const RAZORPAY_KEY = process.env.REACT_APP_RAZORPAY_KEY_ID;
 
   const navigate = useNavigate();
@@ -14,19 +15,27 @@ export default function UpgradePage() {
 
   // 🔒 Redirect if already Pro
   useEffect(() => {
+
     getDashboard()
       .then((res) => {
+
         const plan = res.data.dashboard.user?.plan;
+
         if (plan === "pro") {
           navigate("/dashboard");
         }
+
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+
   }, [navigate]);
 
+
   const handleUpgrade = async () => {
+
     try {
+
       setUpgrading(true);
 
       if (!RAZORPAY_KEY) {
@@ -39,7 +48,7 @@ export default function UpgradePage() {
         return;
       }
 
-      // 1️⃣ Create subscription from backend
+      // 1️⃣ Create subscription
       const { data } = await API.post("/user/create-subscription");
 
       if (!data?.subscription?.id) {
@@ -50,61 +59,99 @@ export default function UpgradePage() {
 
       // 2️⃣ Razorpay Checkout
       const options = {
+
         key: RAZORPAY_KEY,
         subscription_id: subscription.id,
         name: "CyberShield",
         description: "Pro Plan - Monthly Subscription",
+
         theme: {
           color: "#0f172a",
         },
 
         handler: async function (response) {
+
           try {
+
+            // verify payment
             await API.post("/user/verify-payment", response);
 
+            // 🔥 fetch updated user
+            const userRes = await API.get("/auth/me");
+
+            // update local storage
+            localStorage.setItem(
+              "cs_user",
+              JSON.stringify(userRes.data.user)
+            );
+
             alert("🎉 Subscription Activated! You are now PRO.");
+
+            // redirect to dashboard
             navigate("/dashboard");
+
           } catch (err) {
+
             console.error("Verification failed:", err);
             alert("Payment verification failed.");
+
           }
-        },
+
+        }
+
       };
 
       const rzp = new window.Razorpay(options);
       rzp.open();
 
     } catch (error) {
+
       console.error("Subscription error:", error);
       alert("Subscription failed. Try again.");
+
     } finally {
+
       setUpgrading(false);
+
     }
+
   };
 
+
   if (loading) {
+
     return (
       <div className="flex justify-center items-center h-64">
         <Spinner size="lg" />
       </div>
     );
+
   }
 
   return (
+
     <div className="max-w-5xl mx-auto py-16 px-6">
+
       <div className="text-center mb-16">
+
         <h1 className="text-4xl font-bold text-cs-text mb-4">
           Upgrade to Pro
         </h1>
+
         <p className="text-cs-subtle text-lg">
           Unlock unlimited scans and advanced security insights.
         </p>
+
       </div>
 
+
       <div className="grid md:grid-cols-2 gap-8">
+
         {/* Free Plan */}
         <Card className="p-8 border border-cs-border">
+
           <h2 className="text-xl font-semibold mb-4">Free Plan</h2>
+
           <p className="text-3xl font-bold mb-6">
             ₹0<span className="text-sm text-cs-subtle"> / month</span>
           </p>
@@ -123,15 +170,19 @@ export default function UpgradePage() {
           >
             Current Plan
           </button>
+
         </Card>
+
 
         {/* Pro Plan */}
         <Card className="p-8 border-2 border-cs-primary relative shadow-lg">
+
           <span className="absolute top-4 right-4 text-xs font-semibold bg-cs-primary text-white px-3 py-1 rounded-full">
             MOST POPULAR
           </span>
 
           <h2 className="text-xl font-semibold mb-4">Pro Plan</h2>
+
           <p className="text-3xl font-bold mb-6">
             ₹499<span className="text-sm text-cs-subtle"> / month</span>
           </p>
@@ -151,12 +202,17 @@ export default function UpgradePage() {
           >
             {upgrading ? "Processing..." : "Upgrade Now"}
           </button>
+
         </Card>
+
       </div>
 
       <p className="text-center text-xs text-cs-subtle mt-10">
         Cancel anytime. No hidden charges.
       </p>
+
     </div>
+
   );
+
 }
