@@ -44,8 +44,13 @@ connectDB();
 app.use(helmet());
 
 app.use(cors({
-  origin: config.services.clientUrl,
+  origin: [
+    "https://cybershield-lite-weld.vercel.app",
+    "http://localhost:3000"
+  ],
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
 app.use(rateLimit({
