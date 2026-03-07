@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || '/api',
+  baseURL: process.env.REACT_APP_API_URL || 'https://cybershield-lite.onrender.com/api',
   timeout: 30000,
 });
 
