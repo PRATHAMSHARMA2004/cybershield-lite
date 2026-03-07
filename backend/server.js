@@ -99,7 +99,7 @@ app.get('/health', async (req, res) => {
     scannerStatus = 'unreachable';
   }
 
-  const healthy = dbStatus === 'connected' && scannerStatus === 'reachable';
+  const healthy = dbStatus === 'connected';
 
   res.status(healthy ? 200 : 503).json({
     status: healthy ? 'ok' : 'degraded',
