@@ -63,6 +63,7 @@ app.use('/api/webhook', express.raw({
   type: 'application/json',
   limit: '1mb',
 }));
+app.use('/api/webhook', webhookRoutes);
 
 // ─── Normal JSON parsing ───────────────────────────────────────────────────────
 app.use(express.json({ limit: '10kb' }));
