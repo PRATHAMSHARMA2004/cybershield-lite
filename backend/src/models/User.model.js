@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema(
       minlength: 2,
       maxlength: 50,
     },
+
     email: {
       type: String,
       required: [true, 'Email is required'],
@@ -18,23 +19,67 @@ const userSchema = new mongoose.Schema(
       trim: true,
       match: [/^\S+@\S+\.\S+$/, 'Invalid email format'],
     },
+
     password: {
       type: String,
       required: [true, 'Password is required'],
       minlength: 8,
       select: false,
     },
+
     role: {
       type: String,
       enum: ['admin', 'user'],
-      default: 'admin',
+      default: 'user',
     },
+
     isActive: {
       type: Boolean,
       default: true,
     },
+
     lastLogin: {
       type: Date,
+    },
+
+    // ==========================
+    // 🔥 BILLING SECTION
+    // ==========================
+
+    plan: {
+      type: String,
+      enum: ['free', 'pro'],
+      default: 'free',
+    },
+
+    subscriptionId: {
+      type: String,
+    },
+
+    subscriptionStatus: {
+      type: String, // active, cancelled, completed, etc.
+    },
+
+    subscriptionStartDate: {
+      type: Date,
+    },
+
+    subscriptionEndDate: {
+      type: Date,
+    },
+
+    // ==========================
+    // Usage Control
+    // ==========================
+
+    scanLimit: {
+      type: Number,
+      default: 5,
+    },
+
+    scansUsed: {
+      type: Number,
+      default: 0,
     },
   },
   {
@@ -42,7 +87,9 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Hash password before saving
+// ==========================
+// Password Hash
+// ==========================
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   const salt = await bcrypt.genSalt(12);
@@ -50,12 +97,16 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-// Compare password method
+// ==========================
+// Compare Password
+// ==========================
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Remove sensitive fields from JSON output
+// ==========================
+// Remove Sensitive Fields
+// ==========================
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.password;

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { startScan, getScanResult } from "../services/api";
+import { startScan, getScanResult} from "../services/api";
+import API from "../services/api";
 import { PrimaryButton } from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import { Spinner, PageHeader } from "../components/ui/primitives";
@@ -18,33 +19,78 @@ export default function ScanPage() {
   const [scanId, setScanId] = useState(null);
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+
   const navigate = useNavigate();
   const pollRef = useRef(null);
 
   const handleScan = async (e) => {
-    e.preventDefault();
-    let normalized = url.trim();
-    if (!normalized.startsWith("http")) normalized = "https://" + normalized;
-    setLoading(true);
-    try {
-      const { data } = await startScan(normalized);
-      setScanId(data.scanId);
-      setStatus("running");
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to start scan");
-      setLoading(false);
-    }
-  };
+  e.preventDefault();
 
+  let normalized = url.trim();
+  if (!normalized.startsWith("http"))
+    normalized = "https://" + normalized;
+
+  setLoading(true);
+  setStatus("running");
+  setCurrentStep(0);
+
+  try {
+    // 1️⃣ Create domain first
+const domainRes = await API.post("/domains", {
+  domain: normalized,
+});
+
+const domainId = domainRes.data.domain._id;
+
+// 2️⃣ Start scan with both values
+const { data } = await startScan({
+  url: normalized,
+  domainId: domainId,
+});
+
+setScanId(data.scanId);
+  } catch (err) {
+    toast.error(
+      err.response?.data?.message || "Failed to start scan"
+    );
+    setLoading(false);
+    setStatus(null);
+  }
+};
+
+  // Step animation
   useEffect(() => {
-    if (!scanId || status === "completed" || status === "failed") return;
+    if (!loading) {
+      setCurrentStep(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setCurrentStep((prev) =>
+        prev < CHECKS.length - 1 ? prev + 1 : prev
+      );
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [loading]);
+
+  // Poll scan result
+  useEffect(() => {
+    if (!scanId || status !== "running") return;
+
     pollRef.current = setInterval(async () => {
       try {
         const { data } = await getScanResult(scanId);
-        if (data.scan.status === "completed" || data.scan.status === "failed") {
+
+        if (
+          data.scan.status === "completed" ||
+          data.scan.status === "failed"
+        ) {
           clearInterval(pollRef.current);
           setStatus(data.scan.status);
           setLoading(false);
+
           if (data.scan.status === "completed") {
             toast.success("Scan complete");
             navigate(`/scan/${scanId}`);
@@ -52,29 +98,49 @@ export default function ScanPage() {
             toast.error("Scan failed. Please try again.");
           }
         }
-      } catch { clearInterval(pollRef.current); setLoading(false); }
+      } catch {
+        clearInterval(pollRef.current);
+        setLoading(false);
+        setStatus(null);
+      }
     }, 3000);
+
     return () => clearInterval(pollRef.current);
   }, [scanId, status, navigate]);
 
   return (
     <div>
-      <PageHeader title="Website Scanner" subtitle="Detect vulnerabilities, SSL issues, and misconfigurations" />
+      <PageHeader
+        title="Website Scanner"
+        subtitle="Detect vulnerabilities, SSL issues, and misconfigurations"
+      />
 
       <div className="max-w-2xl space-y-6">
         <Card>
-          <p className="text-sm text-cs-muted mb-4">Enter a URL to scan</p>
+          <p className="text-sm text-cs-muted mb-4">
+            Enter a URL to scan
+          </p>
+
           <form onSubmit={handleScan} className="flex gap-3">
             <input
-              type="text" value={url} required disabled={loading}
+              type="text"
+              value={url}
+              required
+              disabled={loading}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://yourwebsite.com"
               className="flex-1 bg-cs-elevated border border-cs-border rounded-lg px-3 py-2.5 text-sm text-cs-text placeholder-cs-subtle focus:outline-none focus:border-cs-primary transition-all duration-200 disabled:opacity-50"
             />
-            <PrimaryButton type="submit" disabled={loading} className="px-5 py-2.5">
+
+            <PrimaryButton
+              type="submit"
+              disabled={loading}
+              className="px-5 py-2.5"
+            >
               {loading ? "Scanning..." : "Scan"}
             </PrimaryButton>
           </form>
+
           <p className="text-xs text-cs-subtle mt-3">
             Only scan websites you own or have written permission to test.
           </p>
@@ -85,14 +151,44 @@ export default function ScanPage() {
             <div className="flex items-center gap-4 mb-6">
               <Spinner />
               <div>
-                <p className="text-sm font-medium text-cs-text">Scan in progress</p>
-                <p className="text-xs text-cs-subtle mt-0.5">This usually takes 30–90 seconds</p>
+                <p className="text-sm font-medium text-cs-text">
+                  Scan in progress
+                </p>
+                <p className="text-xs text-cs-subtle mt-0.5">
+                  This usually takes 30–90 seconds
+                </p>
               </div>
             </div>
-            <div className="space-y-2">
+
+            {/* Progress Bar */}
+            <div className="w-full bg-cs-elevated rounded-full h-2 mb-6 overflow-hidden">
+              <div
+                className="bg-cs-primary h-2 transition-all duration-500"
+                style={{
+                  width: `${
+                    ((currentStep + 1) / CHECKS.length) * 100
+                  }%`,
+                }}
+              />
+            </div>
+
+            <div className="space-y-3">
               {CHECKS.map((step, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm text-cs-muted">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cs-primary animate-pulse" />
+                <div
+                  key={i}
+                  className={`flex items-center gap-2 text-sm ${
+                    i <= currentStep
+                      ? "text-cs-text"
+                      : "text-cs-muted"
+                  }`}
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      i <= currentStep
+                        ? "bg-green-500"
+                        : "bg-cs-primary animate-pulse"
+                    }`}
+                  />
                   {step}
                 </div>
               ))}
@@ -102,17 +198,39 @@ export default function ScanPage() {
 
         {!loading && (
           <Card>
-            <p className="text-sm font-medium text-cs-text mb-4">What we check</p>
+            <p className="text-sm font-medium text-cs-text mb-4">
+              What we check
+            </p>
+
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: "SSL / TLS",         desc: "Certificate validity, issuer, expiry" },
-                { label: "Security Headers",  desc: "HSTS, CSP, X-Frame-Options and more"  },
-                { label: "Open Ports",        desc: "Detect exposed services and databases" },
-                { label: "Technologies",      desc: "Identify vulnerable or outdated software" },
+                {
+                  label: "SSL / TLS",
+                  desc: "Certificate validity, issuer, expiry",
+                },
+                {
+                  label: "Security Headers",
+                  desc: "HSTS, CSP, X-Frame-Options and more",
+                },
+                {
+                  label: "Open Ports",
+                  desc: "Detect exposed services and databases",
+                },
+                {
+                  label: "Technologies",
+                  desc: "Identify vulnerable or outdated software",
+                },
               ].map((item) => (
-                <div key={item.label} className="bg-cs-elevated rounded-xl p-4 hover:scale-[1.01] transition-all duration-200">
-                  <p className="text-sm font-medium text-cs-text">{item.label}</p>
-                  <p className="text-xs text-cs-subtle mt-1">{item.desc}</p>
+                <div
+                  key={item.label}
+                  className="bg-cs-elevated rounded-xl p-4 hover:scale-[1.01] transition-all duration-200"
+                >
+                  <p className="text-sm font-medium text-cs-text">
+                    {item.label}
+                  </p>
+                  <p className="text-xs text-cs-subtle mt-1">
+                    {item.desc}
+                  </p>
                 </div>
               ))}
             </div>

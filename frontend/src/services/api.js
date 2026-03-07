@@ -31,7 +31,7 @@ export const login = (data) => API.post('/auth/login', data);
 export const getMe = () => API.get('/auth/me');
 
 // Scans
-export const startScan = (url) => API.post('/scan/website', { url });
+export const startScan = (data) => API.post('/scan/website', data );
 export const getScanResult = (scanId) => API.get(`/scan/${scanId}`);
 export const getScanHistory = (page = 1) => API.get(`/scan/history?page=${page}`);
 

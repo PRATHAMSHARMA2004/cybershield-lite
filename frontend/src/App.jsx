@@ -10,6 +10,7 @@ import ScanResultPage from './pages/ScanResultPage';
 import PhishingPage from './pages/PhishingPage';
 import HistoryPage from './pages/HistoryPage';
 import Layout from './components/Layout';
+import UpgradePage from './pages/UpgradePage';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -35,6 +36,7 @@ function AppRoutes() {
         <Route path="scan/:scanId" element={<ScanResultPage />} />
         <Route path="phishing" element={<PhishingPage />} />
         <Route path="history" element={<HistoryPage />} />
+        <Route path="upgrade" element={<UpgradePage />} /> 
       </Route>
     </Routes>
   );
