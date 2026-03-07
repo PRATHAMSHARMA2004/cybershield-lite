@@ -59,7 +59,7 @@ app.use(rateLimit({
 // ───────────────────────────────────────────────────────────────────────────────
 // 🔥 WEBHOOK RAW BODY (MUST BE BEFORE express.json())
 // ───────────────────────────────────────────────────────────────────────────────
-app.use('/webhook', express.raw({
+app.use('/api/webhook', express.raw({
   type: 'application/json',
   limit: '1mb',
 }));
