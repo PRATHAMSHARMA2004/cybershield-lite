@@ -9,7 +9,7 @@
 const config = {
   // ── Server ──────────────────────────────────────────────────────
   server: {
-    port:    parseInt(process.env.PORT, 10),
+    port:    parseInt(process.env.PORT, 10)|| 5000,
     env:     process.env.NODE_ENV,
     isProd:  process.env.NODE_ENV === 'production',
     isDev:   process.env.NODE_ENV === 'development',
