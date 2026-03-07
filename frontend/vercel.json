@@ -1,12 +1,9 @@
 {
   "routes": [
+    {"handle": "filesystem"},
     {
-      "src": "/api/(.*)",
-      "dest": "https://cybershield-lite.onrender.com/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
