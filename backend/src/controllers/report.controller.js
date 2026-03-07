@@ -1,6 +1,5 @@
-const puppeteer = require('puppeteer');
+const PDFDocument = require('pdfkit');
 const Scan = require('../models/Scan.model');
-const generateHTMLReport = require('../templates/report.template');
 
 // @desc    Download PDF security report
 // @route   GET /api/report/:scanId
@@ -20,43 +19,31 @@ const generateReport = async (req, res, next) => {
       });
     }
 
-    // Map fields for template compatibility
-    const formattedScan = {
-      url: scan.websiteUrl,
-      score: scan.securityScore,
-      summary: scan.summary,
-      createdAt: scan.createdAt,
-    };
+    const doc = new PDFDocument();
 
-    const html = generateHTMLReport(formattedScan);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=cybershield-report-${scan._id}.pdf`
+    );
+    res.setHeader('Content-Type', 'application/pdf');
 
-    const browser = await puppeteer.launch({
-      headless: "new",
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      executablePath: puppeteer.executablePath()
-    });
+    doc.pipe(res);
 
-    const page = await browser.newPage();
+    doc.fontSize(22).text('CyberShield Security Report', { align: 'center' });
+    doc.moveDown();
 
-    await page.setContent(html, {
-      waitUntil: 'networkidle0'
-    });
+    doc.fontSize(14).text(`Website: ${scan.websiteUrl}`);
+    doc.text(`Security Score: ${scan.securityScore}`);
+    doc.text(`Scan Date: ${scan.createdAt}`);
 
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      preferCSSPageSize: true
-    });
+    doc.moveDown();
 
-    await browser.close();
+    if (scan.summary) {
+      doc.text('Summary:', { underline: true });
+      doc.text(scan.summary);
+    }
 
-    res.writeHead(200, {
-      'Content-Type': 'application/pdf',
-      'Content-Length': pdfBuffer.length,
-      'Content-Disposition': `attachment; filename=cybershield-report-${scan._id}.pdf`,
-    });
-
-    res.end(pdfBuffer);
+    doc.end();
 
   } catch (error) {
     next(error);
