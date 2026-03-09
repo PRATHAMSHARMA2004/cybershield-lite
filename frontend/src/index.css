@@ -36,8 +36,8 @@ details > summary::-webkit-details-marker {
 
 @media (max-width: 768px) {
 
-  .sidebar {
-    display: none;
+  div[class*="border-r"]{
+    display: none !important;
   }
-  
+
 }
