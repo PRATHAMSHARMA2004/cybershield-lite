@@ -32,12 +32,23 @@ details > summary::-webkit-details-marker {
   background: #475569;
 }
 
-/* MOBILE RESPONSIVE */
+/* MOBILE SIDEBAR */
 
 @media (max-width: 768px) {
 
-  div[class*="border-r"]{
-    display: none !important;
+  .sidebar{
+    position: fixed;
+    left: -260px;
+    top: 0;
+    width: 260px;
+    height: 100%;
+    background: #0b1220;
+    transition: left 0.3s ease;
+    z-index: 1000;
+  }
+
+  .sidebar.open{
+    left: 0;
   }
 
 }

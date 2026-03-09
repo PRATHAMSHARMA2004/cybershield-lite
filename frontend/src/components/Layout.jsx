@@ -3,10 +3,10 @@ import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 
 const navItems = [
-  { to: "/dashboard", icon: "▦",  label: "Dashboard"         },
-  { to: "/scan",      icon: "⬡",  label: "Website Scanner"   },
-  { to: "/phishing",  icon: "⚑",  label: "Phishing Analyzer" },
-  { to: "/history",   icon: "☰",  label: "Scan History"      },
+  { to: "/dashboard", icon: "▦", label: "Dashboard" },
+  { to: "/scan", icon: "⬡", label: "Website Scanner" },
+  { to: "/phishing", icon: "⚑", label: "Phishing Analyzer" },
+  { to: "/history", icon: "☰", label: "Scan History" },
 ];
 
 export default function Layout() {
@@ -21,8 +21,9 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-cs-bg text-cs-text flex">
+
       {/* ── Sidebar ─────────────────────────────── */}
-      <aside className="w-60 bg-cs-surface border-r border-cs-border flex flex-col fixed h-full z-10">
+      <aside className="sidebar w-60 bg-cs-surface border-r border-cs-border flex flex-col fixed h-full z-20">
 
         {/* Brand */}
         <div className="px-6 py-6 border-b border-cs-border">
@@ -65,6 +66,7 @@ export default function Layout() {
               <p className="text-cs-subtle text-xs truncate">{user?.email}</p>
             </div>
           </div>
+
           <button
             onClick={handleLogout}
             className="w-full text-left px-3 py-2 text-cs-subtle hover:text-cs-danger text-sm rounded-lg hover:bg-cs-danger/10 transition-all duration-200"
@@ -72,12 +74,14 @@ export default function Layout() {
             Sign out
           </button>
         </div>
+
       </aside>
 
       {/* ── Main ─────────────────────────────────── */}
       <main className="flex-1 ml-60 px-8 py-6">
         <Outlet />
       </main>
+
     </div>
   );
 }
