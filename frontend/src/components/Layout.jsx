@@ -8,6 +8,7 @@ const navItems = [
   { to: "/scan", icon: "⬡", label: "Website Scanner" },
   { to: "/phishing", icon: "⚑", label: "Phishing Analyzer" },
   { to: "/history", icon: "☰", label: "Scan History" },
+  { to: "/help", icon: "❓", label: "Help & Support" }   // ← Added Help
 ];
 
 export default function Layout() {

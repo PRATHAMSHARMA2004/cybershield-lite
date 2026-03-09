@@ -11,6 +11,7 @@ import PhishingPage from "./pages/PhishingPage";
 import HistoryPage from "./pages/HistoryPage";
 import UpgradePage from "./pages/UpgradePage";
 import LandingPage from "./pages/LandingPage";
+import HelpPage from "./pages/HelpPage";
 
 import Layout from "./components/Layout";
 
@@ -88,6 +89,8 @@ function AppRoutes() {
         <Route path="/history" element={<HistoryPage />} />
 
         <Route path="/upgrade" element={<UpgradePage />} />
+
+        <Route path="help" element={<HelpPage />} />
 
       </Route>
 
