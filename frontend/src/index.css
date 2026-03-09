@@ -31,3 +31,19 @@ details > summary::-webkit-details-marker {
 ::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
+
+/* MOBILE RESPONSIVE */
+
+@media (max-width: 768px) {
+
+  .sidebar {
+    display: none;
+  }
+
+  .main-content {
+    width: 100%;
+    margin-left: 0;
+    padding: 16px;
+  }
+
+}
