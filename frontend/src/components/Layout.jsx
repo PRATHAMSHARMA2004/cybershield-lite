@@ -29,7 +29,7 @@ export default function Layout() {
       <aside
         className={`fixed lg:static z-20 w-60 h-full bg-cs-surface border-r border-cs-border flex flex-col transition-transform duration-300
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-        lg:translate-x-0`}
+        lg:translate-x-0 lg:transform-none`}
       >
 
         {/* Brand */}
