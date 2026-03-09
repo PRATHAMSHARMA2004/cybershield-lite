@@ -78,7 +78,7 @@ export default function Layout() {
       </aside>
 
       {/* ── Main ─────────────────────────────────── */}
-      <main className="flex-1 ml-60 px-8 py-6">
+      <main className="flex-1 lg:ml-60 px-4 lg:px-8 py-6">
         <Outlet />
       </main>
 
