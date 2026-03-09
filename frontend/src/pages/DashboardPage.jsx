@@ -82,10 +82,25 @@ export default function DashboardPage() {
 
   const { stats, usage, scoreTrend, user } = data;
 
+  const toggleSidebar = () => {
+    const sidebar = document.querySelector(".sidebar");
+    if (sidebar) sidebar.classList.toggle("open");
+  };
+
   return (
     <div>
-      {/* Header + Plan Badge */}
+
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
+
+        {/* Mobile Hamburger */}
+        <button
+          className="lg:hidden text-2xl mr-3"
+          onClick={toggleSidebar}
+        >
+          ☰
+        </button>
+
         <PageHeader title="Dashboard" subtitle="Security posture overview" />
 
         {user?.plan === "pro" ? (
@@ -97,9 +112,10 @@ export default function DashboardPage() {
             Free Plan
           </span>
         )}
+
       </div>
 
-      {/* Usage meter only for free users */}
+      {/* Usage meter */}
       <UsageMeter usage={usage} plan={user?.plan} />
 
       {/* Stats */}
@@ -127,6 +143,7 @@ export default function DashboardPage() {
 
       {/* Chart + Score */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+
         <Card className="lg:col-span-2">
           <p className="text-sm text-cs-muted mb-4">Security Score Trend</p>
 
@@ -190,6 +207,7 @@ export default function DashboardPage() {
             <p className="text-sm text-cs-subtle">No scans yet</p>
           )}
         </Card>
+
       </div>
     </div>
   );
