@@ -38,9 +38,9 @@ details > summary::-webkit-details-marker {
 
   .sidebar{
     position: fixed;
-    left: -260px;
     top: 0;
-    width: 260px;
+    left: -240px;   /* default hidden */
+    width: 240px;
     height: 100%;
     background: #0b1220;
     transition: left 0.3s ease;
