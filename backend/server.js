@@ -100,6 +100,10 @@ app.use(morgan(config.server.isProd ? 'combined' : 'dev', {
 }));
 
 // ─── Health endpoint ───────────────────────────────────────────────────────────
+app.get('/ping', (req, res)=> {
+  res.status(200).send('alive');
+});
+
 app.get('/health', async (req, res) => {
 
   const startTime = Date.now();
