@@ -41,7 +41,10 @@ const app = express();
 
 connectDB();
 
-app.use(helmet());
+app.use(helmet({
+  frameguard:{action:"deny"},
+  contentTypeOptions: true
+}));
 
 app.use(cors({
   origin: [
