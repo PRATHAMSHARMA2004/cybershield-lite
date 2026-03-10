@@ -45,6 +45,8 @@ app.use(helmet());
 
 app.use(cors({
   origin: [
+    "https://cybershieldai.online",
+    "https://www.cybershieldai.online",
     "https://cybershield-lite-weld.vercel.app",
     "http://localhost:3000"
   ],
