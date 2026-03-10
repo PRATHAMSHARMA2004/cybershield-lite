@@ -70,18 +70,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.head("/health")
 def health():
     return {
-        "status":    "ok",
-        "service":   "cybershield-scanner",
-        "version":   "3.0.0",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "uptime":    f"{round(time.time() - START_TIME)}s",
-        "runtime":   {"python": sys.version.split()[0], "platform": platform.system()},
-        "capabilities": [
-            "ssl_check", "https_redirect", "security_headers", "cookie_security",
-            "port_scan", "path_scan", "directory_listing", "robots_txt_parsing",
-            "tech_detection", "dns_security", "phishing_analysis", "rule_based_scoring",
-        ],
-    }
+        "status":    "ok",  }
 
 
 app.include_router(scan_router)
