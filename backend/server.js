@@ -46,6 +46,18 @@ app.use(helmet({
   contentTypeOptions: true
 }));
 
+app.use((req, res, next) => {
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; img-src 'self' data: https:; script-src 'self' https: 'unsafe-inline'; style-src 'self' https: 'unsafe-inline';"
+  );
+
+  next();
+});
+
 app.use(cors({
   origin: [
     "https://cybershieldai.online",
