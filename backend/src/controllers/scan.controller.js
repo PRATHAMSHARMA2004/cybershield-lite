@@ -14,6 +14,15 @@ const { sendSecurityAlert } = require("../services/email.service");
 const { generateSecurityReport } = require("../services/report.service");
 const { getSecurityRecommendation } = require("../utils/securityRecommendations");
 
+const { getLocalFix } = require("../services/fixEngine.service");
+const { generateGeminiFix } = require("../services/gemini.service");
+const {
+  getCachedResponse,
+  cacheResponse,
+  checkAIRateLimit,
+  incrementAIUsage
+} = require("../services/aiLimiter.service");
+
 
 // ── Scanner health check ────────────────────────────────────
 const checkScannerHealth = async () => {
@@ -162,16 +171,108 @@ const scanWebsite = async (req, res, next) => {
         low: result?.issues?.low?.length || 0,
       };
 
-      const vulnerabilities = [
+
+      // ── Vulnerabilities with RULE ENGINE + AI FALLBACK ─────────
+      // Strategy: Local fix first → AI fallback for Pro users only
+      // Only call AI for CRITICAL and HIGH severity to save costs
+
+      // Separate issues by severity for processing
+      const criticalAndHigh = [
         ...(result?.issues?.critical || []),
-        ...(result?.issues?.high || []),
+        ...(result?.issues?.high || [])
+      ];
+      const mediumAndLow = [
         ...(result?.issues?.medium || []),
         ...(result?.issues?.low || [])
-      ].map(issue => ({
-        ...issue,
-        recommendation: getSecurityRecommendation(issue.title|| "")
-      }));
+      ];
 
+      // Check if Pro user can use AI
+      const isPro = req.user.plan === "pro";
+      let canUseAI = false;
+      let aiMessage = null;
+
+      if (isPro) {
+        const rateLimitCheck = checkAIRateLimit(req.user._id.toString());
+        if (!rateLimitCheck.allowed) {
+          aiMessage = rateLimitCheck.message;
+          canUseAI = false;
+          logger.warn(`AI limit reached for user: ${req.user._id}`);
+        } else {
+          canUseAI = true;
+        }
+      }
+
+      // Process CRITICAL and HIGH with AI fallback (batched)
+      const processHighSeverityIssues = async (issues) => {
+        const maxParallelAICalls = 5; // Prevent API quota issues
+        const results = [];
+
+        for (let i = 0; i < issues.length; i += maxParallelAICalls) {
+          const batch = issues.slice(i, i + maxParallelAICalls);
+
+          const batchResults = await Promise.all(
+            batch.map(async (issue) => {
+              const recommendation = getSecurityRecommendation(issue.title || "");
+              let fix = null;
+
+              // Try local fix first
+              const localFix = getLocalFix(issue.title || "");
+              if (localFix) {
+                fix = localFix.fix;
+                return { ...issue, recommendation, fix };
+              }
+
+              // Try AI fallback if Pro and rate limit OK
+              if (canUseAI) {
+                // Check cache first
+                const cached = getCachedResponse(issue.title || "");
+                if (cached) {
+                  fix = cached;
+                  return { ...issue, recommendation, fix };
+                }
+
+                // Call Gemini API
+                const aiFix = await generateGeminiFix(issue.title || "");
+                if (aiFix) {
+                  cacheResponse(issue.title || "", aiFix);
+                  incrementAIUsage(req.user._id.toString());
+                  fix = aiFix;
+                }
+              }
+
+              return { ...issue, recommendation, fix };
+            })
+          );
+
+          results.push(...batchResults);
+        }
+
+        return results;
+      };
+
+      // Process MEDIUM and LOW (no AI, only recommendations)
+      const processMediumLowIssues = (issues) => {
+        return issues.map((issue) => {
+          const recommendation = getSecurityRecommendation(issue.title || "");
+          const localFix = getLocalFix(issue.title || "");
+          return {
+            ...issue,
+            recommendation,
+            fix: localFix?.fix || null
+          };
+        });
+      };
+
+      // Execute both in parallel
+      const [highVulnerabilities, lowVulnerabilities] = await Promise.all([
+        processHighSeverityIssues(criticalAndHigh),
+        processMediumLowIssues(mediumAndLow)
+      ]);
+
+      // Combine vulnerabilities in severity order
+      const vulnerabilities = [...highVulnerabilities, ...lowVulnerabilities];
+
+      // Get previous scan for score comparison
       const previousScan = await Scan.findOne({
         userId: req.user._id,
         domainId,
@@ -179,16 +280,16 @@ const scanWebsite = async (req, res, next) => {
         _id: { $ne: scan._id },
       }).sort({ createdAt: -1 });
 
-      const previousScore = previousScan
-        ? previousScan.securityScore
-        : null;
+      const previousScore =
+        previousScan ? previousScan.securityScore : null;
 
       const scoreChange =
         previousScore !== null
           ? (result.score || 0) - previousScore
           : 0;
 
-      await Scan.findByIdAndUpdate(scan._id, {
+      // Include AI limit message in scan if applicable
+      let scanMetadata = {
         status: "completed",
         securityScore: result.score || 0,
         previousScore,
@@ -200,9 +301,15 @@ const scanWebsite = async (req, res, next) => {
         openPorts: result.open_ports || [],
         technologies: result.technologies || [],
         scanDuration: duration,
-      });
+      };
 
-      // ── PDF Report Generate ─────────────────────────
+      if (aiMessage) {
+        scanMetadata.aiLimitMessage = aiMessage;
+      }
+
+      await Scan.findByIdAndUpdate(scan._id, scanMetadata);
+
+      // ── PDF REPORT ─────────
       try {
 
         const savedScan = await Scan.findById(scan._id);
@@ -257,9 +364,8 @@ const scanWebsite = async (req, res, next) => {
     next(error);
   }
 
+  
 };
-
-
 // ── GET /api/scan/:scanId ───────────────────────────────────
 const getScanResult = async (req, res, next) => {
 
@@ -357,9 +463,10 @@ const scanRateLimiter = rateLimit({
 });
 
 
+// ── EXPORTS ──────────────────────────────────────────────────
 module.exports = {
   scanWebsite,
   getScanResult,
   getScanHistory,
-  scanRateLimiter,
+  scanRateLimiter
 };

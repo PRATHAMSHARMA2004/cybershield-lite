@@ -6,10 +6,11 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "axios": "^1.13.6",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
+    "dotenv": "^16.6.1",
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
     "express-validator": "^7.0.1",
@@ -19,7 +20,7 @@
     "mongoose": "^8.0.3",
     "morgan": "^1.10.0",
     "node-cron": "^4.2.1",
-    "nodemailer": "^8.0.1",
+    "nodemailer": "^8.0.2",
     "pdfkit": "^0.14.0",
     "puppeteer": "^24.37.5",
     "razorpay": "^2.9.6",

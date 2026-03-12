@@ -12,8 +12,11 @@ import HistoryPage from "./pages/HistoryPage";
 import UpgradePage from "./pages/UpgradePage";
 import LandingPage from "./pages/LandingPage";
 import HelpPage from "./pages/HelpPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 import Layout from "./components/Layout";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 
 /* ───────────────── PRIVATE ROUTE ───────────────── */
 
@@ -50,7 +53,8 @@ function AppRoutes() {
       {/* Landing Page */}
       <Route path="/" element={<LandingPage />} />
 
-      {/* Public */}
+      {/* Public Routes */}
+
       <Route
         path="/login"
         element={
@@ -69,7 +73,33 @@ function AppRoutes() {
         }
       />
 
+      <Route
+      path="/verify-email/:token"
+      element={
+          <VerifyEmailPage />
+      }
+      />
+
+      <Route
+        path="/forgot-password"
+        element={
+          <PublicRoute>
+            <ForgotPasswordPage />
+          </PublicRoute>
+        }
+        />
+
+        <Route
+        path="/reset-password/:token"
+        element={
+          <PublicRoute>
+            <ResetPasswordPage />
+          </PublicRoute>
+        }
+      />
+
       {/* Protected App Layout */}
+
       <Route
         element={
           <PrivateRoute>
@@ -90,11 +120,12 @@ function AppRoutes() {
 
         <Route path="/upgrade" element={<UpgradePage />} />
 
-        <Route path="help" element={<HelpPage />} />
+        <Route path="/help" element={<HelpPage />} />
 
       </Route>
 
       {/* Fallback */}
+
       <Route path="*" element={<Navigate to="/" replace />} />
 
     </Routes>
